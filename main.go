@@ -7,11 +7,14 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 type Response struct {
@@ -27,6 +30,18 @@ func main() {
 	// token := os.Getenv("TOKEN")
 	// to := os.Getenv("TO")
 	// from := os.Getenv("FROM")
+	dbUser := os.Getenv("DB_USER")
+	dbHost := os.Getenv("DB_HOST")
+	dbPass := os.Getenv("DB_PASS")
+	dbName := os.Getenv("DB_NAME")
+	dbPort := os.Getenv("DB_PORT")
+
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=America/Toronto", dbHost, dbUser, dbPass, dbName, dbPort)
+	_, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		log.Fatalf("Error creating database connection:\n%v", err)
+	}
+
 	r := mux.NewRouter()
 	r.HandleFunc("/sms", exampleHandler).Methods("POST")
 	http.Handle("/", r)
