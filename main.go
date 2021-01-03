@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/xml"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -12,6 +13,10 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 )
+
+type Response struct {
+	Message []string `xml:Message>Body`
+}
 
 func main() {
 	// Load .env file for account credentials
@@ -57,5 +62,19 @@ func exampleHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatalf("Error decoding request body:\n%v", err)
 	}
-	log.Println(string(body))
+
+	bodyMap, err := url.ParseQuery(string(body))
+	if err != nil {
+		log.Fatalf("Error converting body to map:\n%v", err)
+	}
+
+	msg := bodyMap["Body"][0]
+
+	log.Println(msg)
+
+	responseMsg := Response{[]string{"no u"}}
+	x, _ := xml.Marshal(responseMsg)
+
+	w.Header().Set("Content-Type", "application/xml")
+	w.Write(x)
 }
