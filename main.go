@@ -72,7 +72,7 @@ func exampleHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Println(msg)
 
-	responseMsg := Response{[]string{"no u"}}
+	responseMsg := Response{[]string{"no u", "and u"}}
 	x, _ := xml.Marshal(responseMsg)
 
 	w.Header().Set("Content-Type", "application/xml")
