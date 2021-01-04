@@ -13,8 +13,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	"github.com/mdesson/CatFactsForever/FactManager"
 )
 
 type Response struct {
@@ -36,10 +35,9 @@ func main() {
 	dbName := os.Getenv("DB_NAME")
 	dbPort := os.Getenv("DB_PORT")
 
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=America/Toronto", dbHost, dbUser, dbPass, dbName, dbPort)
-	_, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	_, err := FactManager.Init(dbHost, dbUser, dbPass, dbName, dbPort)
 	if err != nil {
-		log.Fatalf("Error creating database connection:\n%v", err)
+		log.Fatalf("Error opening db connection:\n%v", err)
 	}
 
 	r := mux.NewRouter()
