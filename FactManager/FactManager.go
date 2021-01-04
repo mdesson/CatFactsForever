@@ -9,11 +9,24 @@ import (
 	"gorm.io/gorm"
 )
 
+// Current status of user's cat fact campaign
+type UserStatus int
+
+const (
+	PENDING UserStatus = iota
+	ACTIVE
+	STOPPED
+)
+
+func (s UserStatus) String() string {
+	return [...]string{"PENDING", "ACTIVE", "STOPPED"}[s]
+}
+
 type CatEnthusiast struct {
 	gorm.Model
 	Name          string
 	PhoneNumber   string
-	Status        string
+	Status        UserStatus
 	FactCategory  int
 	TotalSent     int
 	ThanksCounter int
