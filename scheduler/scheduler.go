@@ -13,7 +13,7 @@ var stop = make(chan bool)
 // Start begins running cron jobs
 // Recommended to run as a goroutine in main with a deferred Stop()
 func Start() {
-	timer := time.NewTicker(1 * time.Second)
+	timer := time.NewTicker(10 * time.Second)
 	for {
 		select {
 		case <-stop:

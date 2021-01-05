@@ -1,20 +1,23 @@
 package main
 
 import (
+	"context"
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
-	"github.com/mdesson/CatFactsForever/FactManager"
-	scheduler "github.com/mdesson/CatFactsForever/Scheduler"
+	"github.com/mdesson/CatFactsForever/factManager"
+	"github.com/mdesson/CatFactsForever/scheduler"
 )
 
 type Response struct {
@@ -26,21 +29,40 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Fatal("Please include an .env file with SID and TOKEN values from Twilio")
 	}
-	// sid := os.Getenv("SID")
-	// token := os.Getenv("TOKEN")
+	sid := os.Getenv("SID")
+	token := os.Getenv("TOKEN")
 	// to := os.Getenv("TO")
-	// from := os.Getenv("FROM")
+	from := os.Getenv("FROM")
 	dbUser := os.Getenv("DB_USER")
 	dbHost := os.Getenv("DB_HOST")
 	dbPass := os.Getenv("DB_PASS")
 	dbName := os.Getenv("DB_NAME")
 	dbPort := os.Getenv("DB_PORT")
 
-	_, err := FactManager.Init(dbHost, dbUser, dbPass, dbName, dbPort)
+	// Initialize database
+	db, err := factManager.Init(dbHost, dbUser, dbPass, dbName, dbPort)
 	if err != nil {
 		log.Fatalf("Error opening db connection:\n%v", err)
 	}
 
+	// Fetch cat enthusiasts and facts
+	users := make([]factManager.CatEnthusiast, 0)
+	facts := make([]factManager.Fact, 0)
+	db.Where("fact_category = ?", "cat").Find(&users)
+	db.Where("category = ?", "cat").Find(&facts)
+
+	// Add the fact sms job to the scheduler
+	jobFunc := func(ctx context.Context) error {
+		for _, user := range users {
+			seed := rand.NewSource(time.Now().UnixNano())
+			fact := facts[rand.New(seed).Intn(len(facts))]
+			sendText(fact.Body, sid, token, user.PhoneNumber, from)
+		}
+		return nil
+	}
+	if err := scheduler.AddJob("catFacts", "* * * * *", "Sends cat facts to cat enthusiasts", true, true, jobFunc); err != nil {
+		log.Fatalf("Error registering cat facts job with scheduler:\n%v", err)
+	}
 	go scheduler.Start()
 
 	r := mux.NewRouter()
@@ -54,7 +76,7 @@ func sendText(msg, sid, token, to, from string) int {
 	data := url.Values{}
 	data.Set("To", to)
 	data.Set("From", from)
-	data.Set("Body", "test123")
+	data.Set("Body", msg)
 
 	msgURL := fmt.Sprintf("https://api.twilio.com/2010-04-01/Accounts/%s/Messages.json", sid)
 
@@ -67,7 +89,6 @@ func sendText(msg, sid, token, to, from string) int {
 	// Send Request
 	client := &http.Client{}
 	resp, _ := client.Do(r)
-	fmt.Println(resp.StatusCode)
 
 	return resp.StatusCode
 }
