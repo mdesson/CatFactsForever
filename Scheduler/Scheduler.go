@@ -16,7 +16,7 @@ type JobFunc func(*context.Context) error
 
 // Job to be run and all of its metadata
 type Job struct {
-	id          int                 // Job's uid
+	ID          int                 // Job's uid
 	Cron        string              // cron string. Supports special characters *,- only
 	Description string              // Short description of job
 	Active      bool                // inactive jobs are not run
@@ -26,7 +26,7 @@ type Job struct {
 	ctx         *context.Context    // Context for JobFunc
 	mu          *sync.Mutex         // Only one call to Run() can hold the lock
 	err         error               // error from last run, otherwise nil
-	job         JobFunc             // Actual job to be run
+	Job         JobFunc             // Actual job to be run
 }
 
 // Status returns user-friendly string with job's current status
@@ -36,9 +36,9 @@ func (j Job) Status() string {
 		activeStatus = "active"
 	}
 	if j.err == nil {
-		return fmt.Sprintf("Job %v is %s with no error", j.id, activeStatus)
+		return fmt.Sprintf("Job %v is %s with no error", j.ID, activeStatus)
 	}
-	return fmt.Sprintf("Job %v is %s with error:\n%v", j.id, activeStatus, j.err)
+	return fmt.Sprintf("Job %v is %s with error:\n%v", j.ID, activeStatus, j.err)
 }
 
 // Run the job. Returns early if job is inactive or does not need to be run
@@ -62,7 +62,7 @@ func (j *Job) run() {
 
 	// Run if runnable or error occurred on last run
 	if runnable || (j.err != nil && j.Rerun) {
-		j.err = j.job(j.ctx)
+		j.err = j.Job(j.ctx)
 	}
 	j.running = false
 }
