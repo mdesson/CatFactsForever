@@ -3,30 +3,28 @@ package scheduler
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 )
 
-// TODO: It will run every minute, on the minute
-// TODO: Write tests
-
 // JobFunc will be the function run the job runner
-type JobFunc func(*context.Context) error
+type JobFunc func(context.Context) error
 
 // Job to be run and all of its metadata
 type Job struct {
-	ID          int                 // Job's uid
-	Cron        string              // cron string. Supports special characters *,- only
-	Description string              // Short description of job
-	Active      bool                // inactive jobs are not run
-	running     bool                // If job is currently running
-	Rerun       bool                // Determines if jobs are rerun on next cycle following an error
-	Cancel      *context.CancelFunc // For cancellation and timeouts
-	ctx         *context.Context    // Context for JobFunc
-	mu          *sync.Mutex         // Only one call to Run() can hold the lock
-	err         error               // error from last run, otherwise nil
-	Job         JobFunc             // Actual job to be run
+	ID          string             // Job's uid
+	Cron        string             // cron string. Supports special characters *,- only
+	Description string             // Short description of job
+	Active      bool               // inactive jobs are not run
+	running     bool               // If job is currently running
+	Rerun       bool               // Determines if jobs are rerun on next cycle following an error
+	cancel      context.CancelFunc // For cancellation and timeouts
+	ctx         context.Context    // Context for JobFunc
+	mu          *sync.Mutex        // Only one call to Run() can hold the lock
+	err         error              // error from last run, otherwise nil
+	Job         JobFunc            // Actual job to be run
 }
 
 // Status returns user-friendly string with job's current status
@@ -39,6 +37,15 @@ func (j Job) Status() string {
 		return fmt.Sprintf("Job %v is %s with no error", j.ID, activeStatus)
 	}
 	return fmt.Sprintf("Job %v is %s with error:\n%v", j.ID, activeStatus, j.err)
+}
+
+// Cancel will stop the job's current execution and reset the context
+// BUG: Context is not properly reset. It will stay cancelled
+func (j *Job) Cancel() {
+	j.cancel()
+	ctx, cancel := context.WithCancel(context.Background())
+	j.ctx = ctx
+	j.cancel = cancel
 }
 
 // Run the job. Returns early if job is inactive or does not need to be run
@@ -98,21 +105,18 @@ func canRun(cron string) (runnable bool, err error) {
 	return true, nil
 }
 
-// Utility function to safely attempt to cast string to int
-func intCast(input string) (value int, ok bool) {
-	var str interface{}
-	str = input
-	output, ok := str.(int)
-	return output, ok
-}
-
 // Check if cron field is runnable
 func cronFieldCheck(input string, compare int) (runnable bool, ok bool) {
+	// return true if input is "*"
+	if input == "*" {
+		return true, true
+	}
+
 	// Validate if cron field is a list of values
 	if strings.Contains(input, ",") {
 		for _, val := range strings.Split(input, ",") {
-			intVal, ok := intCast(val)
-			if !ok {
+			intVal, err := strconv.Atoi(val)
+			if err != nil {
 				return false, false
 			}
 			if intVal == compare {
@@ -121,18 +125,22 @@ func cronFieldCheck(input string, compare int) (runnable bool, ok bool) {
 		}
 		return false, true
 	}
+
 	// Validate if cron field is a range of values
 	if strings.Contains(input, "-") {
-		fieldRange := strings.Split(input, ",")
+		fieldRange := strings.Split(input, "-")
 		if len(fieldRange) != 2 {
 			return false, false
 		}
-		start, ok := intCast(fieldRange[0])
-		if !ok {
+		start, err := strconv.Atoi(fieldRange[0])
+		if err != nil {
 			return false, false
 		}
-		end, ok := intCast(fieldRange[1])
-		if !ok {
+		end, err := strconv.Atoi(fieldRange[1])
+		if err != nil {
+			return false, false
+		}
+		if start > end {
 			return false, false
 		}
 		if compare >= start && compare <= end {
@@ -140,5 +148,12 @@ func cronFieldCheck(input string, compare int) (runnable bool, ok bool) {
 		}
 		return false, true
 	}
-	return false, false
+	inputVal, err := strconv.Atoi(input)
+	if err != nil {
+		return false, false
+	}
+	if inputVal == compare {
+		return true, true
+	}
+	return false, true
 }

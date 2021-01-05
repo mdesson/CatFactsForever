@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
@@ -14,6 +15,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"github.com/mdesson/CatFactsForever/FactManager"
+	scheduler "github.com/mdesson/CatFactsForever/Scheduler"
 )
 
 type Response struct {
@@ -39,6 +41,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error opening db connection:\n%v", err)
 	}
+
+	go scheduler.Start()
 
 	r := mux.NewRouter()
 	r.HandleFunc("/sms", exampleHandler).Methods("POST")
