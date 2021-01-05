@@ -20,7 +20,7 @@ type Job struct {
 	Cron        string              // cron string. Supports special characters *,- only
 	Description string              // Short description of job
 	Active      bool                // inactive jobs are not run
-	Running     bool                // If job is currently running
+	running     bool                // If job is currently running
 	Rerun       bool                // Determines if jobs are rerun on next cycle following an error
 	Cancel      *context.CancelFunc // For cancellation and timeouts
 	ctx         *context.Context    // Context for JobFunc
@@ -46,11 +46,11 @@ func (j Job) Status() string {
 func (j *Job) run() {
 	// Ensure the task is active and not running
 	j.mu.Lock()
-	if !j.Active || !j.Running {
+	if !j.Active || j.running {
 		j.mu.Unlock()
 		return
 	}
-	j.Running = true
+	j.running = true
 	j.mu.Unlock()
 
 	// Parse CRON tab, return early for invalid cron formats
@@ -62,12 +62,9 @@ func (j *Job) run() {
 
 	// Run if runnable or error occurred on last run
 	if runnable || (j.err != nil && j.Rerun) {
-		j.err = nil
-		err = j.job(j.ctx)
-		if err != nil {
-			j.err = err
-		}
+		j.err = j.job(j.ctx)
 	}
+	j.running = false
 }
 
 // Parses crontab format and determines if it is time to run jobFunc
