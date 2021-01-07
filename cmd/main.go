@@ -6,20 +6,19 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
-	"github.com/mdesson/CatFactsForever/factManager"
+	"github.com/mdesson/CatFactsForever/factmanager"
 	"github.com/mdesson/CatFactsForever/scheduler"
 )
 
+// Response is a Twilio Response
 type Response struct {
 	Message []string `xml:Message>Body`
 }
@@ -31,36 +30,44 @@ func main() {
 	}
 	sid := os.Getenv("SID")
 	token := os.Getenv("TOKEN")
-	// to := os.Getenv("TO")
 	from := os.Getenv("FROM")
 	dbUser := os.Getenv("DB_USER")
 	dbHost := os.Getenv("DB_HOST")
 	dbPass := os.Getenv("DB_PASS")
 	dbName := os.Getenv("DB_NAME")
 	dbPort := os.Getenv("DB_PORT")
+	adminName1 := os.Getenv("ADMIN_NAME_1")
+	adminPhone1 := os.Getenv("ADMIN_PHONE_1")
+	adminName2 := os.Getenv("ADMIN_NAME_2")
+	adminPhone2 := os.Getenv("ADMIN_PHONE_2")
 
 	// Initialize database
-	db, err := factManager.Init(dbHost, dbUser, dbPass, dbName, dbPort)
+	db, err := factmanager.Init(dbHost, dbUser, dbPass, dbName, dbPort)
 	if err != nil {
 		log.Fatalf("Error opening db connection:\n%v", err)
 	}
+	factmanager.ResetAndPopulate(db, adminName1, adminPhone1, adminName2, adminPhone2, "cat", "facts.csv")
+	msg := factmanager.MakeFactMessage("cat", db)
+	fmt.Println(msg)
 
-	// Fetch cat enthusiasts and facts
-	users := make([]factManager.CatEnthusiast, 0)
-	facts := make([]factManager.Fact, 0)
-	db.Where("fact_category = ?", "cat").Find(&users)
-	db.Where("category = ?", "cat").Find(&facts)
+	subscription := &factmanager.Subscription{}
+	users := []factmanager.CatEnthusiast{}
+	db.Where("id = ?", 1).Find(subscription)
+	db.Where("subscription_id = ?", subscription.ID).Find(&users)
 
 	// Add the fact sms job to the scheduler
 	jobFunc := func(ctx context.Context) error {
 		for _, user := range users {
-			seed := rand.NewSource(time.Now().UnixNano())
-			fact := facts[rand.New(seed).Intn(len(facts))]
-			sendText(fact.Body, sid, token, user.PhoneNumber, from)
+			msg := factmanager.MakeFactMessage(user.FactCategory, db)
+			respCode := sendText(msg, sid, token, user.PhoneNumber, from)
+			if respCode != 201 {
+				return fmt.Errorf("Error sending text message to %v with code %v", user.Name, respCode)
+			}
 		}
 		return nil
 	}
-	if err := scheduler.AddJob("catFacts", "* * * * *", "Sends cat facts to cat enthusiasts", true, true, jobFunc); err != nil {
+
+	if err := scheduler.AddJob(fmt.Sprint(subscription.ID), subscription.Cron, subscription.Description, true, true, jobFunc); err != nil {
 		log.Fatalf("Error registering cat facts job with scheduler:\n%v", err)
 	}
 	go scheduler.Start()
@@ -68,7 +75,9 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/sms", exampleHandler).Methods("POST")
 	http.Handle("/", r)
-	http.ListenAndServe(":8080", nil)
+	if err = http.ListenAndServe(":8000", nil); err != nil {
+		log.Fatalf("Error starting on server on ':8080':\n%v\n", err)
+	}
 }
 
 func sendText(msg, sid, token, to, from string) int {
