@@ -44,8 +44,8 @@ func MakeFactMessage(category string, db *gorm.DB) string {
 	return msg
 }
 
-// MakeThanksMessage generates a reply message for the given category
-func MakeThanksMessage(category string, db *gorm.DB) string {
+// MakeReplyMessage generates a reply message for the given category
+func MakeReplyMessage(category string, db *gorm.DB) string {
 	// Fetch the fact
 	fact := GetRandomFact(db, category)
 
@@ -125,7 +125,7 @@ func ResetAndPopulate(db *gorm.DB, adminName1, adminPhone1, adminName2, adminPho
 	replies := []ReplyMessage{
 		{Category: categoryName, Body: "Glad to hear you're enjoying CAT FACTS! Here's another one:"},
 		{Category: categoryName, Body: "Thank you for subscribing to CAT FACTS! This next fact is a meowthful:"},
-		{Category: categoryName, Body: "We love hearing from a CAT FACTS FAN! Here's a bonus feline fact since you lov us so much:"},
+		{Category: categoryName, Body: "We love hearing from a CAT FACTS FAN! Here's a bonus feline fact since you luuuuuuuuv us so much:"},
 		{Category: categoryName, Body: "Unsubscribe successful. We hoped you enjoyed your time with - Just kittying! Here's another CAT FACT:"},
 	}
 	db.CreateInBatches(replies, 4)
@@ -160,20 +160,22 @@ func ResetAndPopulate(db *gorm.DB, adminName1, adminPhone1, adminName2, adminPho
 	// Add addmin as catenthusiast
 	adminUsers := []CatEnthusiast{
 		{
-			Name:           adminName1,
-			PhoneNumber:    adminPhone1,
-			Active:         true,
-			FactCategory:   categoryName,
-			SubscriptionID: subscription.ID,
-			TotalSent:      0,
+			Name:             adminName1,
+			PhoneNumber:      adminPhone1,
+			Active:           true,
+			FactCategory:     categoryName,
+			SubscriptionID:   subscription.ID,
+			TotalSent:        0,
+			TotalSentSession: 0,
 		},
 		{
-			Name:           adminName2,
-			PhoneNumber:    adminPhone2,
-			Active:         true,
-			FactCategory:   categoryName,
-			SubscriptionID: subscription.ID,
-			TotalSent:      0,
+			Name:             adminName2,
+			PhoneNumber:      adminPhone2,
+			Active:           true,
+			FactCategory:     categoryName,
+			SubscriptionID:   subscription.ID,
+			TotalSent:        0,
+			TotalSentSession: 0,
 		},
 	}
 	db.Create(adminUsers)

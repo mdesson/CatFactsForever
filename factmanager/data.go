@@ -5,12 +5,13 @@ import "gorm.io/gorm"
 // CatEnthusiast represents users of CatFacts
 type CatEnthusiast struct {
 	gorm.Model
-	Name           string
-	PhoneNumber    string // Format +1XXXXXXXXXX
-	Active         bool   // Send facts to active user
-	FactCategory   string
-	SubscriptionID uint
-	TotalSent      int // Total messages sent to user
+	Name             string
+	PhoneNumber      string // Format +1XXXXXXXXXX
+	Active           bool   // Send facts to active user
+	FactCategory     string
+	SubscriptionID   uint
+	TotalSentSession int // Total messages sent to user during current subscription
+	TotalSent        int // Total messages sent to user over all time
 }
 
 // Fact is a simple fact on any category, such as "cat"

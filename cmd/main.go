@@ -56,7 +56,7 @@ func main() {
 				return fmt.Errorf("Error sending text message to %v with code %v", user.Name, respCode)
 			}
 			// If no error occurred, update the total messages sent to the user and the total number of thanks
-			db.Model(&user).Updates(map[string]int{"TotalSent": (user.TotalSent + 1)})
+			db.Model(&user).Updates(map[string]int{"total_sent": (user.TotalSent + 1), "total_sent_session": (user.TotalSentSession + 1)})
 		}
 		return nil
 	}

@@ -56,11 +56,38 @@ func MakeResponseHandler(db *gorm.DB) func(w http.ResponseWriter, r *http.Reques
 			log.Fatalf("Error converting body to map:\n%v", err)
 		}
 
+		// Get the income message and phone number of user
 		incomingMsg := bodyMap["Body"][0]
-		log.Println(incomingMsg)
+		phoneNumber := bodyMap["From"]
 
+		// declarations of user, their subscription, and the xml to be marshalled
+		user := factmanager.CatEnthusiast{}
+		subscription := factmanager.Subscription{}
+		var x []byte
+
+		// populate user and subscription
+		db.Where("phone_number = ?", phoneNumber).Find(&user)
+		db.Where("id = ?", user.SubscriptionID).Find(&subscription)
+
+		if strings.ToLower(incomingMsg) == "thanks" || strings.ToLower(incomingMsg) == "stop" {
+			db.Model(&user).Update("total_sent_session", 0)
+			return
+		}
+
+		// fetch outgoing message
 		outgoingMsg := factmanager.MakeReplyMessage("cat", db)
-		x, _ := xml.Marshal(Response{[]string{outgoingMsg}})
+
+		// Inlcude a thanks message if user has reached their subscription's threshold
+		if user.TotalSentSession >= subscription.ThanksThreshold {
+			thanks := factmanager.GetRandomThanks(db, user.FactCategory)
+			x, _ = xml.Marshal(Response{[]string{outgoingMsg, thanks}})
+
+		} else {
+			x, _ = xml.Marshal(Response{[]string{outgoingMsg}})
+		}
+
+		// Increment total messages sent to user by one
+		db.Model(&user).Updates(&factmanager.CatEnthusiast{TotalSent: (user.TotalSent + 1), TotalSentSession: (user.TotalSentSession + 1)})
 
 		w.Header().Set("Content-Type", "application/xml")
 		w.Write(x)
