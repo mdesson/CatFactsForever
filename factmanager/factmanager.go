@@ -11,56 +11,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// CatEnthusiast represents users of CatFacts
-type CatEnthusiast struct {
-	gorm.Model
-	Name           string
-	PhoneNumber    string // Format +1XXXXXXXXXX
-	Active         bool   // Send facts to active user
-	FactCategory   string
-	SubscriptionID uint
-	TotalSent      int // Total messages sent to user
-	ThanksCounter  int // Number of times on current subscription user is sent a thanks message
-}
-
-// Fact is a simple fact on any category, such as "cat"
-type Fact struct {
-	gorm.Model
-	Body     string
-	Category string
-}
-
-// ThanksMessage passive-aggressively urges the user to say thanks, the secret unsubscribe word
-type ThanksMessage struct {
-	gorm.Model
-	Category string
-	Body     string
-}
-
-// Greeting is prepended to facts sent to the user
-type Greeting struct {
-	gorm.Model
-	Category string
-	Body     string
-}
-
-// Category is a category of fact, such as cat
-type Category struct {
-	gorm.Model
-	Name           string
-	SubscribeMsg   string
-	UnsubscribeMsg string
-}
-
-// Subscription describes the frequency with which text messages are sent, and how soon unsubscribe hints begin
-type Subscription struct {
-	gorm.Model
-	Frequency       string // Descriptive name such as "daily" or "every fifteen minutes"
-	Description     string // Short description of the subscription
-	Cron            string // cron string, only ints and special characters *,- accepted
-	ThanksThreshold int    // Number of messages sent prior to beginning of say thanks hints
-}
-
 // GetRandomFact provides a random fact from the given category
 func GetRandomFact(db *gorm.DB, category string) Fact {
 	facts := make([]Fact, 0)
@@ -167,7 +117,7 @@ func ResetAndPopulate(db *gorm.DB, adminName1, adminPhone1, adminName2, adminPho
 	subscription := &Subscription{
 		Frequency:       "every fifteen minutes",
 		Description:     "Will send at X:00, X:15, X:30, and X:45 between 9am and 10pm",
-		Cron:            "0,15,30,45 9-22 * * *",
+		Cron:            "0,15,30,45 9-21 * * *",
 		ThanksThreshold: 10,
 	}
 	db.Create(subscription)
