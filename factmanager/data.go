@@ -11,7 +11,6 @@ type CatEnthusiast struct {
 	FactCategory   string
 	SubscriptionID uint
 	TotalSent      int // Total messages sent to user
-	ThanksCounter  int // Number of times on current subscription user is sent a thanks message
 }
 
 // Fact is a simple fact on any category, such as "cat"

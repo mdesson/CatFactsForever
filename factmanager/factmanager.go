@@ -54,7 +54,7 @@ func MakeThanksMessage(category string, db *gorm.DB) string {
 	db.Where("category = ?", category).Find(&replies)
 	seed := rand.NewSource(time.Now().UnixNano())
 	reply := replies[rand.New(seed).Intn(len(replies))]
-	msg := fmt.Sprintf("%s\n\n%s", reply.Body, fact.Body)
+	msg := fmt.Sprintf("%s\n\n%s", reply.Body, fact)
 
 	return msg
 }
@@ -166,7 +166,6 @@ func ResetAndPopulate(db *gorm.DB, adminName1, adminPhone1, adminName2, adminPho
 			FactCategory:   categoryName,
 			SubscriptionID: subscription.ID,
 			TotalSent:      0,
-			ThanksCounter:  0,
 		},
 		{
 			Name:           adminName2,
@@ -175,7 +174,6 @@ func ResetAndPopulate(db *gorm.DB, adminName1, adminPhone1, adminName2, adminPho
 			FactCategory:   categoryName,
 			SubscriptionID: subscription.ID,
 			TotalSent:      0,
-			ThanksCounter:  0,
 		},
 	}
 	db.Create(adminUsers)
