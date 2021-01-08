@@ -12,12 +12,21 @@ import (
 )
 
 // GetRandomFact provides a random fact from the given category
-func GetRandomFact(db *gorm.DB, category string) Fact {
+func GetRandomFact(db *gorm.DB, category string) string {
 	facts := make([]Fact, 0)
 	db.Where("category = ?", category).Find(&facts)
 	seed := rand.NewSource(time.Now().UnixNano())
 	fact := facts[rand.New(seed).Intn(len(facts))]
-	return fact
+	return fact.Body
+}
+
+// GetRandomThanks provides a random passive-aggressive thanks message
+func GetRandomThanks(db *gorm.DB, category string) string {
+	allThanks := make([]ThanksMessage, 0)
+	db.Where("category = ?", category).Find(&allThanks)
+	seed := rand.NewSource(time.Now().UnixNano())
+	thanks := allThanks[rand.New(seed).Intn(len(allThanks))]
+	return thanks.Body
 }
 
 // MakeFactMessage generates a fact for the given category
@@ -30,7 +39,22 @@ func MakeFactMessage(category string, db *gorm.DB) string {
 	db.Where("category = ?", category).Find(&greetings)
 	seed := rand.NewSource(time.Now().UnixNano())
 	greeting := greetings[rand.New(seed).Intn(len(greetings))]
-	msg := fmt.Sprintf("%s\n%s", greeting.Body, fact.Body)
+	msg := fmt.Sprintf("%s\n\n%s", greeting.Body, fact)
+
+	return msg
+}
+
+// MakeThanksMessage generates a reply message for the given category
+func MakeThanksMessage(category string, db *gorm.DB) string {
+	// Fetch the fact
+	fact := GetRandomFact(db, category)
+
+	// Select a random greeting
+	replies := make([]ReplyMessage, 0)
+	db.Where("category = ?", category).Find(&replies)
+	seed := rand.NewSource(time.Now().UnixNano())
+	reply := replies[rand.New(seed).Intn(len(replies))]
+	msg := fmt.Sprintf("%s\n\n%s", reply.Body, fact.Body)
 
 	return msg
 }
@@ -49,6 +73,7 @@ func Init(host, user, pass, name, port string) (*gorm.DB, error) {
 	db.AutoMigrate(&Subscription{})
 	db.AutoMigrate(&Fact{})
 	db.AutoMigrate(&ThanksMessage{})
+	db.AutoMigrate(&ReplyMessage{})
 	db.AutoMigrate(&CatEnthusiast{})
 
 	return db, nil
@@ -60,6 +85,7 @@ func ResetAndPopulate(db *gorm.DB, adminName1, adminPhone1, adminName2, adminPho
 	db.Migrator().DropTable(&Greeting{})
 	db.Migrator().DropTable(&Fact{})
 	db.Migrator().DropTable(&ThanksMessage{})
+	db.Migrator().DropTable(&ReplyMessage{})
 	db.Migrator().DropTable(&CatEnthusiast{})
 	db.Migrator().DropTable(&Subscription{})
 	db.Migrator().DropTable(&Category{})
@@ -67,6 +93,7 @@ func ResetAndPopulate(db *gorm.DB, adminName1, adminPhone1, adminName2, adminPho
 	db.Migrator().CreateTable(&Greeting{})
 	db.Migrator().CreateTable(&Fact{})
 	db.Migrator().CreateTable(&ThanksMessage{})
+	db.Migrator().CreateTable(&ReplyMessage{})
 	db.Migrator().CreateTable(&CatEnthusiast{})
 	db.Migrator().CreateTable(&Category{})
 	db.Migrator().CreateTable(&Subscription{})
@@ -94,6 +121,14 @@ func ResetAndPopulate(db *gorm.DB, adminName1, adminPhone1, adminName2, adminPho
 		{Category: categoryName, Body: "It took us a decade to prepare these Fresh Feline Facts, and we're finding you just a little ungrateful overe here."},
 	}
 	db.CreateInBatches(thanks, 4)
+
+	replies := []ReplyMessage{
+		{Category: categoryName, Body: "Glad to hear you're enjoying CAT FACTS! Here's another one:"},
+		{Category: categoryName, Body: "Thank you for subscribing to CAT FACTS! This next fact is a meowthful:"},
+		{Category: categoryName, Body: "We love hearing from a CAT FACTS FAN! Here's a bonus feline fact since you lov us so much:"},
+		{Category: categoryName, Body: "Unsubscribe successful. We hoped you enjoyed your time with - Just kittying! Here's another CAT FACT:"},
+	}
+	db.CreateInBatches(replies, 4)
 
 	// Populate facts from csv
 	file, err := os.Open(factCSV)

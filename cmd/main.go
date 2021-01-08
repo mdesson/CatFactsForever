@@ -67,9 +67,9 @@ func main() {
 	go scheduler.Start()
 
 	r := mux.NewRouter()
-	r.HandleFunc("/sms", sms.ResponseHandler).Methods("POST")
+	r.HandleFunc("/sms", sms.MakeResponseHandler(db)).Methods("POST")
 	http.Handle("/", r)
-	if err = http.ListenAndServe(":8000", nil); err != nil {
+	if err = http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatalf("Error starting on server on ':8080':\n%v\n", err)
 	}
 }

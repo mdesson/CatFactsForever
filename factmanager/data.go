@@ -21,6 +21,13 @@ type Fact struct {
 	Category string
 }
 
+// Greeting is prepended to facts sent to the user
+type Greeting struct {
+	gorm.Model
+	Category string
+	Body     string
+}
+
 // ThanksMessage passive-aggressively urges the user to say thanks, the secret unsubscribe word
 type ThanksMessage struct {
 	gorm.Model
@@ -28,8 +35,9 @@ type ThanksMessage struct {
 	Body     string
 }
 
-// Greeting is prepended to facts sent to the user
-type Greeting struct {
+// ReplyMessage is prepended to a fact any time the user trieds to reply to the text message
+// The only time this will not trigger is if the user sends the correct unsubscribe keyword
+type ReplyMessage struct {
 	gorm.Model
 	Category string
 	Body     string

@@ -9,14 +9,18 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/mdesson/CatFactsForever/factmanager"
+	"gorm.io/gorm"
 )
 
-// response is a Twilio sms response to be sent as xml
+// Response is a Twilio sms response to be sent as xml
 // It can contain any number of text Messages
-type response struct {
-	message []string `xml:Message>Body`
+type Response struct {
+	Message []string `xml:Message>Body`
 }
 
+// SendText sends an sms message to the specified number
 func SendText(msg, sid, token, to, from string) int {
 	// Config for text message
 	data := url.Values{}
@@ -39,25 +43,26 @@ func SendText(msg, sid, token, to, from string) int {
 	return resp.StatusCode
 }
 
-// ResponseHandler is an http handler that sends responses to sms messages as they come in
-func ResponseHandler(w http.ResponseWriter, r *http.Request) {
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Fatalf("Error decoding request body:\n%v", err)
+// MakeResponseHandler generates an http handler that sends responses to sms messages as they come in
+func MakeResponseHandler(db *gorm.DB) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			log.Fatalf("Error decoding request body:\n%v", err)
+		}
+
+		bodyMap, err := url.ParseQuery(string(body))
+		if err != nil {
+			log.Fatalf("Error converting body to map:\n%v", err)
+		}
+
+		incomingMsg := bodyMap["Body"][0]
+		log.Println(incomingMsg)
+
+		outgoingMsg := factmanager.MakeReplyMessage("cat", db)
+		x, _ := xml.Marshal(Response{[]string{outgoingMsg}})
+
+		w.Header().Set("Content-Type", "application/xml")
+		w.Write(x)
 	}
-
-	bodyMap, err := url.ParseQuery(string(body))
-	if err != nil {
-		log.Fatalf("Error converting body to map:\n%v", err)
-	}
-
-	msg := bodyMap["Body"][0]
-
-	log.Println(msg)
-
-	responseMsg := response{[]string{"no u", "and u"}}
-	x, _ := xml.Marshal(responseMsg)
-
-	w.Header().Set("Content-Type", "application/xml")
-	w.Write(x)
 }
