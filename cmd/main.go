@@ -51,10 +51,12 @@ func main() {
 		for _, user := range users {
 			msg := factmanager.MakeFactMessage(user.FactCategory, db)
 			respCode := sms.SendText(msg, sid, token, user.PhoneNumber, from)
+			// If http response from Twilio is other than 201, register error
 			if respCode != 201 {
 				return fmt.Errorf("Error sending text message to %v with code %v", user.Name, respCode)
 			}
-			db.Model(&user).Updates(map[string]int{"TotalSent": (user.TotalSent + 1), "ThanksCounter": (user.ThanksCounter + 1)})
+			// If no error occurred, update the total messages sent to the user and the total number of thanks
+			db.Model(&user).Updates(map[string]int{"TotalSent": (user.TotalSent + 1)})
 		}
 		return nil
 	}
