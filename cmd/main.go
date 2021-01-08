@@ -54,6 +54,7 @@ func main() {
 			if respCode != 201 {
 				return fmt.Errorf("Error sending text message to %v with code %v", user.Name, respCode)
 			}
+			db.Model(&user).Updates(map[string]int{"TotalSent": (user.TotalSent + 1), "ThanksCounter": (user.ThanksCounter + 1)})
 		}
 		return nil
 	}
