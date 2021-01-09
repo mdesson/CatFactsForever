@@ -5,8 +5,8 @@ import "gorm.io/gorm"
 // CatEnthusiast represents users of CatFacts
 type CatEnthusiast struct {
 	gorm.Model
-	Name             string
-	PhoneNumber      string // Format +1XXXXXXXXXX
+	Name             string `gorm:"unique"`
+	PhoneNumber      string `gorm:"unique"` // Format +1XXXXXXXXXX
 	Active           bool   // Send facts to active user
 	FactCategory     string
 	SubscriptionID   uint
@@ -46,7 +46,7 @@ type ReplyMessage struct {
 // Category is a category of fact, such as cat
 type Category struct {
 	gorm.Model
-	Name           string
+	Name           string `gorm:"unique"`
 	SubscribeMsg   string
 	UnsubscribeMsg string
 }
@@ -54,8 +54,8 @@ type Category struct {
 // Subscription describes the frequency with which text messages are sent, and how soon unsubscribe hints begin
 type Subscription struct {
 	gorm.Model
-	Frequency       string // Descriptive name such as "daily" or "every fifteen minutes"
-	Description     string // Short description of the subscription
-	Cron            string // cron string, only ints and special characters *,- accepted
+	Frequency       string `gorm:"unique"` // Descriptive name such as "daily" or "every fifteen minutes"
+	Description     string `gorm:"unique"` // Short description of the subscription
+	Cron            string `gorm:"unique"` // cron string, only ints and special characters *,- accepted
 	ThanksThreshold int    // Number of messages sent prior to beginning of say thanks hints
 }

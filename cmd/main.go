@@ -42,12 +42,12 @@ func main() {
 	fmt.Println(msg)
 
 	subscription := &factmanager.Subscription{}
-	users := []factmanager.CatEnthusiast{}
 	db.Where("id = ?", 1).Find(subscription)
-	db.Where("subscription_id = ?", subscription.ID).Find(&users)
 
 	// Add the fact sms job to the scheduler
 	jobFunc := func(ctx context.Context) error {
+		users := []factmanager.CatEnthusiast{}
+		db.Where("subscription_id = ?", subscription.ID).Find(&users)
 		for _, user := range users {
 			msg := factmanager.MakeFactMessage(user.FactCategory, db)
 			respCode := sms.SendText(msg, sid, token, user.PhoneNumber, from)

@@ -80,11 +80,20 @@ func FindJob(id string) (*Job, bool) {
 	return nil, false
 }
 
-// ListJobs returns a slice all job ids in the job store
-func ListJobs() []string {
+// IDs returns a slice all job ids in the job store
+func IDs() []string {
 	jobIDs := make([]string, 0)
 	for id := range jobs {
 		jobIDs = append(jobIDs, id)
 	}
 	return jobIDs
+}
+
+// Statuses returns a slice all job statuses in the job store
+func Statuses() []string {
+	jobList := make([]string, 0)
+	for _, job := range jobs {
+		jobList = append(jobList, job.Status())
+	}
+	return jobList
 }
