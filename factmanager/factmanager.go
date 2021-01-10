@@ -3,6 +3,7 @@ package factmanager
 import (
 	"encoding/csv"
 	"fmt"
+	"log"
 	"math/rand"
 	"os"
 	"time"
@@ -14,7 +15,10 @@ import (
 // GetRandomFact provides a random fact from the given category
 func GetRandomFact(db *gorm.DB, category string) string {
 	facts := make([]Fact, 0)
-	db.Where("category = ?", category).Find(&facts)
+	if err := db.Where("category = ?", category).Find(&facts).Error; err != nil {
+		log.Printf("error occurred getting random fact: %v", err)
+		return ""
+	}
 	seed := rand.NewSource(time.Now().UnixNano())
 	fact := facts[rand.New(seed).Intn(len(facts))]
 	return fact.Body
@@ -23,7 +27,10 @@ func GetRandomFact(db *gorm.DB, category string) string {
 // GetRandomThanks provides a random passive-aggressive thanks message
 func GetRandomThanks(db *gorm.DB, category string) string {
 	allThanks := make([]ThanksMessage, 0)
-	db.Where("category = ?", category).Find(&allThanks)
+	if err := db.Where("category = ?", category).Find(&allThanks).Error; err != nil {
+		log.Printf("error occurred getting random thanks: %v", err)
+		return ""
+	}
 	seed := rand.NewSource(time.Now().UnixNano())
 	thanks := allThanks[rand.New(seed).Intn(len(allThanks))]
 	return thanks.Body
@@ -36,7 +43,10 @@ func MakeFactMessage(category string, db *gorm.DB) string {
 
 	// Select a random greeting
 	greetings := make([]Greeting, 0)
-	db.Where("category = ?", category).Find(&greetings)
+	if err := db.Where("category = ?", category).Find(&greetings).Error; err != nil {
+		log.Printf("error occurred making fact msg: %v", err)
+		return ""
+	}
 	seed := rand.NewSource(time.Now().UnixNano())
 	greeting := greetings[rand.New(seed).Intn(len(greetings))]
 	msg := fmt.Sprintf("%s\n\n%s", greeting.Body, fact)
@@ -51,7 +61,10 @@ func MakeReplyMessage(category string, db *gorm.DB) string {
 
 	// Select a random greeting
 	replies := make([]ReplyMessage, 0)
-	db.Where("category = ?", category).Find(&replies)
+	if err := db.Where("category = ?", category).Find(&replies).Error; err != nil {
+		log.Printf("error occurred making reply msg: %v", err)
+		return ""
+	}
 	seed := rand.NewSource(time.Now().UnixNano())
 	reply := replies[rand.New(seed).Intn(len(replies))]
 	msg := fmt.Sprintf("%s\n\n%s", reply.Body, fact)
@@ -104,7 +117,9 @@ func ResetAndPopulate(db *gorm.DB, adminName1, adminPhone1, adminName2, adminPho
 		{Category: categoryName, Body: "Cat. 😻"},
 		{Category: categoryName, Body: "CAT FACTS here with another purrrrrrfect feline fact!"},
 	}
-	db.CreateInBatches(greetings, 3)
+	if err := db.CreateInBatches(greetings, 3).Error; err != nil {
+		return err
+	}
 
 	// Populate starter data
 	category := &Category{
@@ -112,7 +127,9 @@ func ResetAndPopulate(db *gorm.DB, adminName1, adminPhone1, adminName2, adminPho
 		SubscribeMsg:   "Thank you for subscribing to CAT FACTS, the best source of fun facts about cool kitties and famous felines!\nReply UNSUBSCRIBE if you do not want to receive more facts.",
 		UnsubscribeMsg: "You're very welcome! As a true Cat Enthusiast you clearly are no longer in need of more cat facts. If you ever want to resubscribe just reply START",
 	}
-	db.Create(category)
+	if err := db.Create(category).Error; err != nil {
+		return err
+	}
 
 	thanks := []ThanksMessage{
 		{Category: categoryName, Body: "Would it be so hard to say thanks? We're working hard over here at CAT FACTS to provide you with the highest quality facts."},
@@ -120,7 +137,9 @@ func ResetAndPopulate(db *gorm.DB, adminName1, adminPhone1, adminName2, adminPho
 		{Category: categoryName, Body: "I want chicken, I want liver, meow-thanks, meow-thanks, be thanks-giver."},
 		{Category: categoryName, Body: "It took us a decade to prepare these Fresh Feline Facts, and we're finding you just a little ungrateful overe here."},
 	}
-	db.CreateInBatches(thanks, 4)
+	if err := db.CreateInBatches(thanks, 4).Error; err != nil {
+		return err
+	}
 
 	replies := []ReplyMessage{
 		{Category: categoryName, Body: "Glad to hear you're enjoying CAT FACTS! Here's another one:"},
@@ -128,7 +147,9 @@ func ResetAndPopulate(db *gorm.DB, adminName1, adminPhone1, adminName2, adminPho
 		{Category: categoryName, Body: "We love hearing from a CAT FACTS FAN! Here's a bonus feline fact since you luuuuuuuuv us so much:"},
 		{Category: categoryName, Body: "Unsubscribe successful. We hoped you enjoyed your time with - Just kittying! Here's another CAT FACT:"},
 	}
-	db.CreateInBatches(replies, 4)
+	if err := db.CreateInBatches(replies, 4).Error; err != nil {
+		return err
+	}
 
 	// Populate facts from csv
 	file, err := os.Open(factCSV)
@@ -146,7 +167,9 @@ func ResetAndPopulate(db *gorm.DB, adminName1, adminPhone1, adminName2, adminPho
 		fact := Fact{Category: categoryName, Body: fact[0]}
 		catFacts = append(catFacts, fact)
 	}
-	db.CreateInBatches(catFacts, len(facts))
+	if err := db.CreateInBatches(catFacts, len(facts)).Error; err != nil {
+		return err
+	}
 
 	// cron to send every 15 minutes during the day
 	subscription := &Subscription{
@@ -155,7 +178,9 @@ func ResetAndPopulate(db *gorm.DB, adminName1, adminPhone1, adminName2, adminPho
 		Cron:            "0,15,30,45 9-21 * * *",
 		ThanksThreshold: 10,
 	}
-	db.Create(subscription)
+	if err := db.Create(subscription).Error; err != nil {
+		return err
+	}
 
 	// Add addmin as catenthusiast
 	adminUsers := []CatEnthusiast{
@@ -178,7 +203,9 @@ func ResetAndPopulate(db *gorm.DB, adminName1, adminPhone1, adminName2, adminPho
 			TotalSentSession: 0,
 		},
 	}
-	db.Create(adminUsers)
+	if err := db.Create(adminUsers).Error; err != nil {
+		return err
+	}
 
 	return nil
 }

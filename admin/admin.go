@@ -2,6 +2,7 @@ package admin
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 
@@ -33,7 +34,13 @@ list schedules - lists all schedules
 func ListUsers(db *gorm.DB) string {
 	var users []factmanager.CatEnthusiast
 	output := ""
-	db.Find(&users)
+	if err := db.Find(&users).Error; err != nil {
+		log.Printf("error listing users: %v", err)
+		return "an error occurred fetching users"
+	}
+	if len(users) == 0 {
+		return "no users, use 'add' to add some"
+	}
 	for _, user := range users {
 		var status string
 		if user.Active {
@@ -61,7 +68,14 @@ func ListSubscriptions(db *gorm.DB) string {
 	output := "Schedule IDs and names:\n"
 
 	schedules := []factmanager.Subscription{}
-	db.Find(&schedules)
+	if err := db.Find(&schedules).Error; err != nil {
+		log.Printf("error listing subscriptions: %v", err)
+		return "an error occurred fetching users"
+	}
+
+	if len(schedules) == 0 {
+		return "no schedules found, your admin can add some for you"
+	}
 
 	for _, schedule := range schedules {
 		output = fmt.Sprintf("%v%v: %v\n", output, schedule.ID, schedule.Frequency)
@@ -71,13 +85,19 @@ func ListSubscriptions(db *gorm.DB) string {
 
 // Start will set the user to active
 func Start(name string, db *gorm.DB) string {
-	db.Model(&factmanager.CatEnthusiast{}).Where("name = ?", name).Update("active", true)
+	if err := db.Model(&factmanager.CatEnthusiast{}).Where("name = ?", name).Update("active", true).Error; err != nil {
+		log.Printf("error setting user %v to active: %v", name, err)
+		return "an error occurred setting user to active"
+	}
 	return "done"
 }
 
 // Stop will set the user to inactive
 func Stop(name string, db *gorm.DB) string {
-	db.Model(&factmanager.CatEnthusiast{}).Where("name = ?", name).Update("active", false)
+	if err := db.Model(&factmanager.CatEnthusiast{}).Where("name = ?", name).Update("active", false).Error; err != nil {
+		log.Printf("error setting user %v to inactive: %v", name, err)
+		return "an error occurred setting user to inactive"
+	}
 	return "done"
 }
 

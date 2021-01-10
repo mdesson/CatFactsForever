@@ -42,12 +42,16 @@ func main() {
 	fmt.Println(msg)
 
 	subscription := &factmanager.Subscription{}
-	db.Where("id = ?", 1).Find(subscription)
+	if err := db.Where("id = ?", 1).Find(subscription).Error; err != nil {
+		log.Fatalf("Error getting subscription with id 1: %v", err)
+	}
 
 	// Add the fact sms job to the scheduler
 	jobFunc := func(ctx context.Context) error {
 		users := []factmanager.CatEnthusiast{}
-		db.Where("subscription_id = ?", subscription.ID).Find(&users)
+		if err := db.Where("subscription_id = ?", subscription.ID).Find(&users).Error; err != nil {
+			return fmt.Errorf("Error fetching users that have subscriptionID %v: %v", subscription.ID, err)
+		}
 		for _, user := range users {
 			msg := factmanager.MakeFactMessage(user.FactCategory, db)
 			respCode := sms.SendText(msg, sid, token, user.PhoneNumber, from)
@@ -56,7 +60,9 @@ func main() {
 				return fmt.Errorf("Error sending text message to %v with code %v", user.Name, respCode)
 			}
 			// If no error occurred, update the total messages sent to the user and the total number of thanks
-			db.Model(&user).Updates(&factmanager.CatEnthusiast{TotalSent: (user.TotalSent + 1), TotalSentSession: (user.TotalSentSession + 1)})
+			if err := db.Model(&user).Updates(&factmanager.CatEnthusiast{TotalSent: (user.TotalSent + 1), TotalSentSession: (user.TotalSentSession + 1)}).Error; err != nil {
+				return fmt.Errorf("Error updating user %v's stats: %v", user.Name, err)
+			}
 		}
 		return nil
 	}

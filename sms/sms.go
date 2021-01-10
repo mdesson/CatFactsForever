@@ -142,11 +142,20 @@ func MakeResponseHandler(db *gorm.DB) func(w http.ResponseWriter, r *http.Reques
 			x, _ = xml.Marshal(Response{[]string{reply}})
 		} else {
 			// populate user and subscription
-			db.Where("phone_number = ?", phoneNumber).Find(&user)
-			db.Where("id = ?", user.SubscriptionID).Find(&subscription)
+			if err := db.Where("phone_number = ?", phoneNumber).First(&user).Error; err != nil {
+				log.Printf("Error looking up incoming text user: %v", err)
+				return
+			}
+			if err := db.Where("id = ?", user.SubscriptionID).First(&subscription).Error; err != nil {
+				log.Printf("Error looking up user subscription: %v", err)
+				return
+			}
 
+			// If user unsubscribes, clear total messages sent during current subscription cycle
 			if strings.ToLower(incomingMsg) == "thanks" || strings.ToLower(incomingMsg) == "stop" {
-				db.Model(&user).Update("total_sent_session", 0)
+				if err := db.Model(&user).Update("total_sent_session", 0).Error; err != nil {
+					log.Printf("Error looking up incoming text user: %v", err)
+				}
 				return
 			}
 
@@ -168,7 +177,10 @@ func MakeResponseHandler(db *gorm.DB) func(w http.ResponseWriter, r *http.Reques
 			}
 
 			// Increment total messages sent to user by one
-			db.Model(&user).Updates(&factmanager.CatEnthusiast{TotalSent: (user.TotalSent + 1), TotalSentSession: (user.TotalSentSession + 1)})
+			if err := db.Model(&user).Updates(&factmanager.CatEnthusiast{TotalSent: (user.TotalSent + 1), TotalSentSession: (user.TotalSentSession + 1)}).Error; err != nil {
+				log.Printf("Error updating user %v's stats: %v", user.Name, err)
+				return
+			}
 		}
 
 		w.Header().Set("Content-Type", "application/xml")
