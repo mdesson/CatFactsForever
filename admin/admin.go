@@ -16,13 +16,13 @@ func Help() string {
 	return `Admin commands are:
 add name +1XXXYYYZZZZ suscriptionID category - add user
 
-start [name] - enables sms on user
+start name - enables sms on user
 
-stop [name] - disables sms on user
+stop name - disables sms on user
 
-info [name] - details about user
+info name - details about user
 
-update [name] - change user's schedule
+update name subscriptionID - change user's schedule
 
 list users - lists all users
 
