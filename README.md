@@ -55,6 +55,10 @@ The most important thing in the Opt-Out Management section is to remove any hint
 
 You will need a functioning Postgres instance for this project. `factmanager.Init()` will take care of creating empty tables on starts.
 
+### CSV of Facts
+
+You can specify a csv of facts for the factmanager. It is one column, has no headers, and has one fact on each row.
+
 ## Admin Commands over SMS
 
 If you or your accomplice send a text message to the phone number you can use it to command and control CatFactsForever:
