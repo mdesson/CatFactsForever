@@ -67,7 +67,7 @@ func MakeResponseHandler(db *gorm.DB) func(w http.ResponseWriter, r *http.Reques
 		subscription := factmanager.Subscription{}
 		var x []byte
 
-		if phoneNumber == os.Getenv("ADMIN_PHONE_1") || phoneNumber == os.Getenv("ADMIN_PHONE_1") {
+		if phoneNumber == os.Getenv("ADMIN_PHONE_1") || phoneNumber == os.Getenv("ADMIN_PHONE_2") {
 			// all input is case insensitive, all db data is stored in lower case
 			incomingMsg = strings.ToLower(incomingMsg)
 
@@ -147,6 +147,11 @@ func MakeResponseHandler(db *gorm.DB) func(w http.ResponseWriter, r *http.Reques
 
 			if strings.ToLower(incomingMsg) == "thanks" || strings.ToLower(incomingMsg) == "stop" {
 				db.Model(&user).Update("total_sent_session", 0)
+				return
+			}
+
+			// Don't send facts for help messages
+			if strings.ToLower(incomingMsg) == "help" {
 				return
 			}
 
