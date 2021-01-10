@@ -1,5 +1,6 @@
 # CatFactsForever
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/mdesson/CatFactsForever.svg)](https://pkg.go.dev/github.com/mdesson/CatFactsForever)
 
 For your friends who need to know cat facts - whether they know it or want it or not.
 
@@ -8,8 +9,6 @@ CatFactsForever is a service that will text cat facts - or any other category of
 After receiving a certain number of facts CatFactsForever will begin to feel as if it has been working hard, and getting nothing in return. So it will begin to passive-aggressively ask your friends to thank it for its hard work. If a user sends "thanks" as a response at any time, this will unsubscribe them.
 
 The service is very easy to administer as most commands an admin would need are implemented as text messages - just text `help` to the same number!
-
-*Documentation*: https://pkg.go.dev/github.com/mdesson/CatFactsForever/
 
 ## Configuration
 
