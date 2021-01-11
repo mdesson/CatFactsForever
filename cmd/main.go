@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
@@ -27,17 +28,27 @@ func main() {
 	dbPass := os.Getenv("DB_PASS")
 	dbName := os.Getenv("DB_NAME")
 	dbPort := os.Getenv("DB_PORT")
-	adminName1 := os.Getenv("ADMIN_NAME_1")
-	adminPhone1 := os.Getenv("ADMIN_PHONE_1")
-	adminName2 := os.Getenv("ADMIN_NAME_2")
-	adminPhone2 := os.Getenv("ADMIN_PHONE_2")
 
 	// Initialize database
 	db, err := factmanager.Init(dbHost, dbUser, dbPass, dbName, dbPort)
 	if err != nil {
 		log.Fatalf("Error opening db connection:\n%v", err)
 	}
-	factmanager.ResetAndPopulate(db, adminName1, adminPhone1, adminName2, adminPhone2, "cat", "facts.csv")
+
+	// populate if there are no facts
+	var facts []factmanager.Fact
+	if err := db.Find(&facts).Error; err != nil {
+		log.Fatalf("Error getting facts on startup: %v", err)
+	}
+	if len(facts) == 0 {
+		log.Println("No facts in database. Running populate on all tables")
+		if err := factmanager.Populate(db, "cat", "facts.csv"); err != nil {
+			log.Fatalf("Error populating database on startup: %v", err)
+		}
+		time.Sleep(1 * time.Second)
+		log.Println("Completed database population")
+	}
+
 	msg := factmanager.MakeFactMessage("cat", db)
 	fmt.Println(msg)
 

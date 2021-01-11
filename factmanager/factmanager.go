@@ -92,8 +92,8 @@ func Init(host, user, pass, name, port string) (*gorm.DB, error) {
 	return db, nil
 }
 
-// ResetAndPopulate drops all tables and populates them with default data about cats
-func ResetAndPopulate(db *gorm.DB, adminName1, adminPhone1, adminName2, adminPhone2, categoryName, factCSV string) error {
+// Reset drops all tables and then creates them
+func Reset(db *gorm.DB) {
 	// Empty all tables
 	db.Migrator().DropTable(&Greeting{})
 	db.Migrator().DropTable(&Fact{})
@@ -110,7 +110,17 @@ func ResetAndPopulate(db *gorm.DB, adminName1, adminPhone1, adminName2, adminPho
 	db.Migrator().CreateTable(&CatEnthusiast{})
 	db.Migrator().CreateTable(&Category{})
 	db.Migrator().CreateTable(&Subscription{})
+}
 
+// Populate populates them with default data about cats, you must provide your own csv
+func Populate(db *gorm.DB, categoryName, factCSV string) error {
+	// Get admin data from environment variables
+	adminName1 := os.Getenv("ADMIN_NAME_1")
+	adminPhone1 := os.Getenv("ADMIN_PHONE_1")
+	adminName2 := os.Getenv("ADMIN_NAME_2")
+	adminPhone2 := os.Getenv("ADMIN_PHONE_2")
+
+	// Populate starter data
 	greetings := []Greeting{
 		{Category: categoryName, Body: "CAT FACT ATTACK!"},
 		{Category: categoryName, Body: "Here's your CAT FACT!"},
@@ -118,16 +128,17 @@ func ResetAndPopulate(db *gorm.DB, adminName1, adminPhone1, adminName2, adminPho
 		{Category: categoryName, Body: "CAT FACTS here with another purrrrrrfect feline fact!"},
 	}
 	if err := db.CreateInBatches(greetings, 3).Error; err != nil {
+		Reset(db)
 		return err
 	}
 
-	// Populate starter data
 	category := &Category{
 		Name:           "cat",
 		SubscribeMsg:   "Thank you for subscribing to CAT FACTS, the best source of fun facts about cool kitties and famous felines!\nReply UNSUBSCRIBE if you do not want to receive more facts.",
 		UnsubscribeMsg: "You're very welcome! As a true Cat Enthusiast you clearly are no longer in need of more cat facts. If you ever want to resubscribe just reply START",
 	}
 	if err := db.Create(category).Error; err != nil {
+		Reset(db)
 		return err
 	}
 
@@ -138,6 +149,7 @@ func ResetAndPopulate(db *gorm.DB, adminName1, adminPhone1, adminName2, adminPho
 		{Category: categoryName, Body: "It took us a decade to prepare these Fresh Feline Facts, and we're finding you just a little ungrateful overe here."},
 	}
 	if err := db.CreateInBatches(thanks, 4).Error; err != nil {
+		Reset(db)
 		return err
 	}
 
@@ -154,11 +166,13 @@ func ResetAndPopulate(db *gorm.DB, adminName1, adminPhone1, adminName2, adminPho
 	// Populate facts from csv
 	file, err := os.Open(factCSV)
 	if err != nil {
+		Reset(db)
 		return err
 	}
 	r := csv.NewReader(file)
 	facts, err := r.ReadAll()
 	if err != nil {
+		Reset(db)
 		return err
 	}
 	catFacts := make([]Fact, len(facts))
@@ -168,6 +182,7 @@ func ResetAndPopulate(db *gorm.DB, adminName1, adminPhone1, adminName2, adminPho
 		catFacts = append(catFacts, fact)
 	}
 	if err := db.CreateInBatches(catFacts, len(facts)).Error; err != nil {
+		Reset(db)
 		return err
 	}
 
@@ -179,6 +194,7 @@ func ResetAndPopulate(db *gorm.DB, adminName1, adminPhone1, adminName2, adminPho
 		ThanksThreshold: 10,
 	}
 	if err := db.Create(subscription).Error; err != nil {
+		Reset(db)
 		return err
 	}
 
@@ -204,6 +220,7 @@ func ResetAndPopulate(db *gorm.DB, adminName1, adminPhone1, adminName2, adminPho
 		},
 	}
 	if err := db.Create(adminUsers).Error; err != nil {
+		Reset(db)
 		return err
 	}
 

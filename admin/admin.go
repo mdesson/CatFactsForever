@@ -27,6 +27,10 @@ update name subscriptionID - change user's schedule
 list users - lists all users
 
 list schedules - lists all schedules
+
+reset confirm - deletes all data [DANGER]
+
+populate confirm - puts in starter data [DANGER]
 `
 }
 

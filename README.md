@@ -82,6 +82,9 @@ If you or your accomplice send a text message to the phone number you can use it
 * `list jobs`: Lists the status of all running jobs, of which there is only one (scheduled sms)
   * This is undocumented in help as it is for the main adiministrator
   * It will display any error found by the schedule
+* `reset confirm`: Drops all tables and then recreates them
+* `populate confirm`: Populates tables with starter data
+  * *Warning*: Will drop tables on any errors it encounters to prevent partial data population errors
 
 ## Organization
 

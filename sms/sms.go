@@ -136,6 +136,23 @@ func MakeResponseHandler(db *gorm.DB) func(w http.ResponseWriter, r *http.Reques
 				} else {
 					reply = "can't list that. See help"
 				}
+			} else if cmd == "reset" {
+				if len(args) == 1 && args[0] == "confirm" {
+					factmanager.Reset(db)
+					reply = "deleted all tables in database"
+				} else {
+					reply = "invalid reset command. be careful, this command is destructive"
+				}
+			} else if cmd == "populate" {
+				if len(args) == 1 && args[0] == "confirm" {
+					if err := factmanager.Populate(db, "cat", "facts.csv"); err != nil {
+						reply = fmt.Sprintf("Error populating: %v", err)
+					} else {
+						reply = "repopulated database with starter data"
+					}
+				} else {
+					reply = "invalid populate command. be careful, this command is destructive"
+				}
 			} else {
 				reply = "don't know that one. type help to see available options"
 			}
