@@ -16,6 +16,15 @@ import (
 )
 
 func main() {
+	// Begin logging to file
+	f, err := os.OpenFile("catfacts-logs", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	defer f.Close()
+
+	log.SetOutput(f)
+
 	// Load .env file for account credentials
 	if err := godotenv.Load(); err != nil {
 		log.Fatal("Please include an .env file with SID and TOKEN values from Twilio")
@@ -50,7 +59,7 @@ func main() {
 	}
 
 	msg := factmanager.MakeFactMessage("cat", db)
-	fmt.Println(msg)
+	log.Println(msg)
 
 	subscription := &factmanager.Subscription{}
 	if err := db.Where("id = ?", 1).Find(subscription).Error; err != nil {

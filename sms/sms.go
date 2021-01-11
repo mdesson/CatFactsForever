@@ -176,6 +176,8 @@ func MakeResponseHandler(db *gorm.DB) func(w http.ResponseWriter, r *http.Reques
 				return
 			}
 
+			log.Printf("Message from %v: %v", user.Name, incomingMsg)
+
 			// Don't send facts for help messages
 			if strings.ToLower(incomingMsg) == "help" {
 				return
