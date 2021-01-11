@@ -201,6 +201,12 @@ func Populate(db *gorm.DB, categoryName, factCSV string) error {
 			ThanksThreshold: 10,
 		},
 		{
+			Frequency:       "daily",
+			Description:     "Will send every day at 10:10am",
+			Cron:            "10 10 * * *",
+			ThanksThreshold: 10,
+		},
+		{
 			Frequency:       "weekly",
 			Description:     "Will send every Monday at 10:10am",
 			Cron:            "10 10 * * 1",
