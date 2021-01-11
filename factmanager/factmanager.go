@@ -160,6 +160,7 @@ func Populate(db *gorm.DB, categoryName, factCSV string) error {
 		{Category: categoryName, Body: "Unsubscribe successful. We hoped you enjoyed your time with - Just kittying! Here's another CAT FACT:"},
 	}
 	if err := db.CreateInBatches(replies, 4).Error; err != nil {
+		Reset(db)
 		return err
 	}
 
@@ -186,14 +187,27 @@ func Populate(db *gorm.DB, categoryName, factCSV string) error {
 		return err
 	}
 
-	// cron to send every 15 minutes during the day
-	subscription := &Subscription{
-		Frequency:       "every fifteen minutes",
-		Description:     "Will send at X:00, X:15, X:30, and X:45 between 9am and 10pm",
-		Cron:            "0,15,30,45 9-21 * * *",
-		ThanksThreshold: 10,
+	subscriptions := []Subscription{
+		{
+			Frequency:       "every fifteen minutes",
+			Description:     "Will send at X:00, X:15, X:30, and X:45 between 9am and 10pm",
+			Cron:            "0,15,30,45 9-21 * * *",
+			ThanksThreshold: 10,
+		},
+		{
+			Frequency:       "hourly",
+			Description:     "Will send every hour on the hour between 9am and 10pm",
+			Cron:            "0 9-21 * * *",
+			ThanksThreshold: 10,
+		},
+		{
+			Frequency:       "weekly",
+			Description:     "Will send every Monday at 10:10am",
+			Cron:            "10 10 * * 1",
+			ThanksThreshold: 10,
+		},
 	}
-	if err := db.Create(subscription).Error; err != nil {
+	if err := db.CreateInBatches(subscriptions, 3).Error; err != nil {
 		Reset(db)
 		return err
 	}
@@ -203,18 +217,16 @@ func Populate(db *gorm.DB, categoryName, factCSV string) error {
 		{
 			Name:             adminName1,
 			PhoneNumber:      adminPhone1,
-			Active:           true,
 			FactCategory:     categoryName,
-			SubscriptionID:   subscription.ID,
+			SubscriptionID:   1,
 			TotalSent:        0,
 			TotalSentSession: 0,
 		},
 		{
 			Name:             adminName2,
 			PhoneNumber:      adminPhone2,
-			Active:           true,
 			FactCategory:     categoryName,
-			SubscriptionID:   subscription.ID,
+			SubscriptionID:   1,
 			TotalSent:        0,
 			TotalSentSession: 0,
 		},
