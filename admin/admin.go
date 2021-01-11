@@ -74,7 +74,7 @@ func ListSubscriptions(db *gorm.DB) string {
 	schedules := []factmanager.Subscription{}
 	if err := db.Find(&schedules).Error; err != nil {
 		log.Printf("error listing subscriptions: %v", err)
-		return "an error occurred fetching users"
+		return "an error occurred fetching schedules"
 	}
 
 	if len(schedules) == 0 {

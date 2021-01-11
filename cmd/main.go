@@ -61,34 +61,38 @@ func main() {
 	msg := factmanager.MakeFactMessage("cat", db)
 	log.Println(msg)
 
-	subscription := &factmanager.Subscription{}
-	if err := db.Where("id = ?", 1).Find(subscription).Error; err != nil {
-		log.Fatalf("Error getting subscription with id 1: %v", err)
+	schedules := []factmanager.Subscription{}
+	if err := db.Find(&schedules).Error; err != nil {
+		log.Printf("error listing subscriptions: %v", err)
+		log.Fatalf("Error occurred fetching schedules")
 	}
 
 	// Add the fact sms job to the scheduler
-	jobFunc := func(ctx context.Context) error {
-		users := []factmanager.CatEnthusiast{}
-		if err := db.Where("subscription_id = ?", subscription.ID).Find(&users).Error; err != nil {
-			return fmt.Errorf("Error fetching users that have subscriptionID %v: %v", subscription.ID, err)
-		}
-		for _, user := range users {
-			msg := factmanager.MakeFactMessage(user.FactCategory, db)
-			respCode := sms.SendText(msg, sid, token, user.PhoneNumber, from)
-			// If http response from Twilio is other than 201, register error
-			if respCode != 201 {
-				return fmt.Errorf("Error sending text message to %v with code %v", user.Name, respCode)
+	for _, s := range schedules {
+		subscription := s
+		jobFunc := func(ctx context.Context) error {
+			users := []factmanager.CatEnthusiast{}
+			if err := db.Where("subscription_id = ?", subscription.ID).Find(&users).Error; err != nil {
+				return fmt.Errorf("Error fetching users that have subscriptionID %v: %v", subscription.ID, err)
 			}
-			// If no error occurred, update the total messages sent to the user and the total number of thanks
-			if err := db.Model(&user).Updates(&factmanager.CatEnthusiast{TotalSent: (user.TotalSent + 1), TotalSentSession: (user.TotalSentSession + 1)}).Error; err != nil {
-				return fmt.Errorf("Error updating user %v's stats: %v", user.Name, err)
+			for _, user := range users {
+				msg := factmanager.MakeFactMessage(user.FactCategory, db)
+				respCode := sms.SendText(msg, sid, token, user.PhoneNumber, from)
+				// If http response from Twilio is other than 201, register error
+				if respCode != 201 {
+					return fmt.Errorf("Error sending text message to %v with code %v", user.Name, respCode)
+				}
+				// If no error occurred, update the total messages sent to the user and the total number of thanks
+				if err := db.Model(&user).Updates(&factmanager.CatEnthusiast{TotalSent: (user.TotalSent + 1), TotalSentSession: (user.TotalSentSession + 1)}).Error; err != nil {
+					return fmt.Errorf("Error updating user %v's stats: %v", user.Name, err)
+				}
 			}
+			return nil
 		}
-		return nil
-	}
 
-	if err := scheduler.AddJob(fmt.Sprint(subscription.ID), subscription.Cron, subscription.Description, true, true, jobFunc); err != nil {
-		log.Fatalf("Error registering cat facts job with scheduler:\n%v", err)
+		if err := scheduler.AddJob(fmt.Sprint(subscription.ID), subscription.Cron, subscription.Description, true, true, jobFunc); err != nil {
+			log.Fatalf("Error registering cat facts job with scheduler:\n%v", err)
+		}
 	}
 	go scheduler.Start()
 
