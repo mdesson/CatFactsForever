@@ -76,15 +76,17 @@ func main() {
 				return fmt.Errorf("Error fetching users that have subscriptionID %v: %v", subscription.ID, err)
 			}
 			for _, user := range users {
-				msg := factmanager.MakeFactMessage(user.FactCategory, db)
-				respCode := sms.SendText(msg, sid, token, user.PhoneNumber, from)
-				// If http response from Twilio is other than 201, register error
-				if respCode != 201 {
-					return fmt.Errorf("Error sending text message to %v with code %v", user.Name, respCode)
-				}
-				// If no error occurred, update the total messages sent to the user and the total number of thanks
-				if err := db.Model(&user).Updates(&factmanager.CatEnthusiast{TotalSent: (user.TotalSent + 1), TotalSentSession: (user.TotalSentSession + 1)}).Error; err != nil {
-					return fmt.Errorf("Error updating user %v's stats: %v", user.Name, err)
+				if user.Active {
+					msg := factmanager.MakeFactMessage(user.FactCategory, db)
+					respCode := sms.SendText(msg, sid, token, user.PhoneNumber, from)
+					// If http response from Twilio is other than 201, register error
+					if respCode != 201 {
+						return fmt.Errorf("Error sending text message to %v with code %v", user.Name, respCode)
+					}
+					// If no error occurred, update the total messages sent to the user and the total number of thanks
+					if err := db.Model(&user).Updates(&factmanager.CatEnthusiast{TotalSent: (user.TotalSent + 1), TotalSentSession: (user.TotalSentSession + 1)}).Error; err != nil {
+						return fmt.Errorf("Error updating user %v's stats: %v", user.Name, err)
+					}
 				}
 			}
 			return nil
