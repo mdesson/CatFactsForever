@@ -63,8 +63,7 @@ func main() {
 
 	schedules := []factmanager.Subscription{}
 	if err := db.Find(&schedules).Error; err != nil {
-		log.Printf("error listing subscriptions: %v", err)
-		log.Fatalf("Error occurred fetching schedules")
+		log.Printf("Error listing subscriptions: %v", err)
 	}
 
 	// Add the fact sms job to the scheduler

@@ -173,6 +173,7 @@ func MakeResponseHandler(db *gorm.DB) func(w http.ResponseWriter, r *http.Reques
 				if err := db.Model(&user).Update("total_sent_session", 0).Error; err != nil {
 					log.Printf("Error looking up incoming text user: %v", err)
 				}
+				log.Printf("Unsubscribe from %v", user.Name)
 				return
 			}
 
