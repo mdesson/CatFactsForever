@@ -1,6 +1,7 @@
 # CatFactsForever
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/mdesson/CatFactsForever.svg)](https://pkg.go.dev/github.com/mdesson/CatFactsForever)
+[![Go Report Card](https://goreportcard.com/badge/github.com/mdesson/CatFactsForever)](https://goreportcard.com/report/github.com/mdesson/CatFactsForever)
 
 For your friends who need to know cat facts - whether they know it or want it or not.
 
